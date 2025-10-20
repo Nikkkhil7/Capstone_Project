@@ -34,23 +34,28 @@ jobs:
         run: |
           mkdir -p logs reports screenshots allure-results allure-report
 
-      # 5️⃣ Install Firefox and Geckodriver for Selenium
-      - name: Install Firefox and Geckodriver
+      # 5️⃣ Install Firefox, Geckodriver, and Xvfb (virtual display)
+      - name: Install Firefox, Geckodriver, and Xvfb
         run: |
           sudo apt-get update
-          sudo apt-get install -y firefox
+          sudo apt-get install -y firefox xvfb
           GECKO_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep "tag_name" | cut -d '"' -f 4)
           wget -qO- "https://github.com/mozilla/geckodriver/releases/download/$GECKO_VERSION/geckodriver-$GECKO_VERSION-linux64.tar.gz" | sudo tar -xz -C /usr/local/bin
 
-      # 6️⃣ Install Allure CLI
-      - name: Install Allure CLI
+      # 6️⃣ Start Xvfb (virtual display)
+      - name: Start virtual display
         run: |
-          sudo apt-get install -y allure
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          echo "DISPLAY=:99" >> $GITHUB_ENV
 
-      # 7️⃣ Run Selenium tests (Firefox headless) and generate Allure results
+      # 7️⃣ Run Selenium tests (Firefox headless)
       - name: Run Pytest with Allure
+        env:
+          DISPLAY: :99
         run: |
           pytest --browser=firefox --alluredir=allure-results --maxfail=1 --disable-warnings -q
+
 
       # 8️⃣ Generate Allure HTML report
       - name: Generate Allure HTML Report

@@ -19,15 +19,20 @@ def pytest_addoption(parser):
 def setup(request):
     browser_name = request.config.getoption("browser").lower()
 
-    # ✅ Firefox (headless for CI/CD)
+    # ✅ Firefox (for GitHub Actions)
     if browser_name == "firefox":
         from selenium.webdriver.firefox.options import Options
         firefox_options = Options()
-        firefox_options.add_argument("--headless")  # required for GitHub Actions
+        firefox_options.add_argument("--headless")
+        firefox_options.add_argument("--no-sandbox")
+        firefox_options.add_argument("--disable-dev-shm-usage")
+        firefox_options.add_argument("--disable-gpu")
+        firefox_options.binary_location = "/usr/bin/firefox"  # Use system Firefox
         driver = webdriver.Firefox(
             service=FirefoxService(GeckoDriverManager().install()),
             options=firefox_options
         )
+
 
     # ✅ Edge (for local use only, not in CI)
     elif browser_name == "edge":
