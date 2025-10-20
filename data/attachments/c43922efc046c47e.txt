@@ -1,0 +1,2 @@
+INFO     root:test_001_login.py:29 **** Starting test_login_positive ****
+INFO     root:test_001_login.py:41 **** Login positive test passed ****
