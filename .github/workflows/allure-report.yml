@@ -11,8 +11,7 @@ permissions:
 
 env:
   PYTHON_VERSION: '3.10'
-  # Change this to the Allure CLI version you prefer (example: 2.35.1)
-  ALLURE_VERSION: '2.35.1'
+  ALLURE_VERSION: '2.35.1'    # change if you prefer another valid release
 
 jobs:
   test:
@@ -28,22 +27,28 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Upgrade pip & Install dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          if (Test-Path requirements.txt) { pip install -r requirements.txt } else { Write-Host "requirements.txt not found, skipping" }
-          pip install allure-pytest
-        shell: bash
+          if (Test-Path 'requirements.txt') {
+            python -m pip install -r requirements.txt
+          } else {
+            Write-Host "requirements.txt not found, skipping"
+          }
+          python -m pip install allure-pytest
 
       - name: Create directories
+        shell: pwsh
         run: |
-          if not exist logs mkdir logs
-          if not exist allure-results mkdir allure-results
-          if not exist allure-report mkdir allure-report
-        shell: cmd
+          if (-not (Test-Path logs)) { New-Item -ItemType Directory -Path logs | Out-Null }
+          if (-not (Test-Path allure-results)) { New-Item -ItemType Directory -Path allure-results | Out-Null }
+          if (-not (Test-Path allure-report)) { New-Item -ItemType Directory -Path allure-report | Out-Null }
 
       - name: Run Pytest with Allure
-        run: pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
-        shell: bash
+        shell: pwsh
+        run: |
+          # Run pytest; fail the step if tests fail (exit code non-zero)
+          python -m pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
       - name: Install Allure CLI (Windows) and export envs
         shell: pwsh
@@ -54,8 +59,6 @@ jobs:
           $workspace = "${{ github.workspace }}"
           $destRoot = Join-Path $workspace 'allure'
           $zip = Join-Path $env:TEMP "allure-$version.zip"
-
-          # Use release asset URL (specific version)
           $url = "https://github.com/allure-framework/allure2/releases/download/$version/allure-$version.zip"
           Write-Host "Downloading Allure from: $url"
 
@@ -84,7 +87,6 @@ jobs:
           Write-Host "Extracting Allure to $destRoot..."
           Expand-Archive -LiteralPath $zip -DestinationPath $destRoot -Force
 
-          # The zip usually creates a single folder (e.g., allure-2.xx.x). Get that folder
           $firstFolder = Get-ChildItem -Directory $destRoot | Select-Object -First 1
           if ($null -eq $firstFolder) {
             Write-Error "Could not find extracted Allure folder under $destRoot"
@@ -101,19 +103,15 @@ jobs:
           Write-Host "Allure home: $allureHome"
           Write-Host "Allure bin: $bin"
 
-          # Export for subsequent steps (persist via GITHUB_ENV)
+          # Persist variables for next steps
           Add-Content -Path $env:GITHUB_ENV -Value "ALLURE_HOME=$allureHome"
-          # Prepend the allure bin to PATH for later steps
-          # Note: when adding PATH via GITHUB_ENV, do not expand $env:PATH here in literal string; compose a new PATH so future steps see the bin first.
-          $newPath = "$bin;$env:PATH"
-          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$newPath"
+          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$bin;$env:PATH"
 
       - name: Verify Allure CLI
         shell: pwsh
         run: |
           Write-Host "ALLURE_HOME = $env:ALLURE_HOME"
           Write-Host "PATH = $env:PATH"
-          # run the bat (Windows)
           & "$env:ALLURE_HOME\bin\allure.bat" --version
 
       - name: Generate Allure Report
