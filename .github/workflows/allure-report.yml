@@ -1,4 +1,4 @@
-name: Run Selenium Tests and Generate Allure Report
+name: Run Edge Tests and Generate Allure Report
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       # 1️⃣ Checkout repository
@@ -27,62 +27,42 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-pytest
-          pip install webdriver-manager selenium pytest
 
       # 4️⃣ Create required directories
-      - name: Create required directories
+      - name: Create directories
         run: |
-          mkdir -p logs reports screenshots allure-results allure-report
+          mkdir logs
+          mkdir allure-results
+          mkdir allure-report
 
-      # 5️⃣ Install Firefox, Geckodriver, and Xvfb (virtual display)
-      - name: Install Firefox, Geckodriver, and Xvfb
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y firefox xvfb
-          GECKO_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-          wget -qO- "https://github.com/mozilla/geckodriver/releases/download/$GECKO_VERSION/geckodriver-$GECKO_VERSION-linux64.tar.gz" | sudo tar -xz -C /usr/local/bin
-
-      # 6️⃣ Start Xvfb (virtual display)
-      - name: Start virtual display
-        run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
-          export DISPLAY=:99
-          echo "DISPLAY=:99" >> $GITHUB_ENV
-
-      # 7️⃣ Run Selenium tests (Firefox headless)
+      # 5️⃣ Run tests using Edge
       - name: Run Pytest with Allure
-        env:
-          DISPLAY: :99
         run: |
-          pytest --browser=firefox --alluredir=allure-results --maxfail=1 --disable-warnings -q
+          pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
-
-      # 8️⃣ Generate Allure HTML report
-      - name: Generate Allure HTML Report
+      # 6️⃣ Generate Allure HTML report
+      - name: Generate Allure Report
         run: |
           allure generate allure-results -o allure-report --clean
 
-      # 9️⃣ Upload Allure raw results
-      - name: Upload Allure results
+      # 7️⃣ Upload Allure Results
+      - name: Upload Allure Results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 🔟 Upload Allure HTML report
-      - name: Upload Allure HTML report
+      # 8️⃣ Upload Allure HTML Report
+      - name: Upload Allure HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      # 1️⃣1️⃣ Upload logs and screenshots (optional)
-      - name: Upload logs and screenshots
+      # 9️⃣ Upload Logs (optional)
+      - name: Upload Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-artifacts
-          path: |
-            logs
-            reports
-            screenshots
+          name: logs
+          path: logs
