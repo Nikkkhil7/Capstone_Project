@@ -35,31 +35,38 @@ jobs:
           mkdir allure-results
           mkdir allure-report
 
-      # 5️⃣ Run tests using Edge
+      # 5️⃣ Run Selenium tests (Edge only)
       - name: Run Pytest with Allure
         run: |
           pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
-      # 6️⃣ Generate Allure HTML report
+      # 6️⃣ Install Allure CLI (Windows)
+      - name: Install Allure CLI on Windows
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          irm get.scoop.sh | iex
+          scoop install allure
+
+      # 7️⃣ Generate Allure HTML Report
       - name: Generate Allure Report
         run: |
-          allure generate allure-results -o allure-report --clean
+          & "C:\Users\runneradmin\scoop\shims\allure.exe" generate allure-results -o allure-report --clean
 
-      # 7️⃣ Upload Allure Results
+      # 8️⃣ Upload Allure raw results
       - name: Upload Allure Results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 8️⃣ Upload Allure HTML Report
+      # 9️⃣ Upload Allure HTML Report
       - name: Upload Allure HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      # 9️⃣ Upload Logs (optional)
+      # 🔟 Upload Logs (optional)
       - name: Upload Logs
         if: always()
         uses: actions/upload-artifact@v4
