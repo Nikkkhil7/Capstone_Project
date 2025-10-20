@@ -33,44 +33,41 @@ jobs:
         run: |
           mkdir -p logs reports screenshots allure-results allure-report
 
-      # 5️⃣ Install utilities (unzip)
-      - name: Install unzip
+      # 5️⃣ Download and setup Allure CLI
+      - name: Download and setup Allure CLI
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip
-
-      # 6️⃣ Setup Allure CLI (using pre-downloaded zip)
-      - name: Setup Allure CLI
-        run: |
+          sudo apt-get install -y unzip wget
+          wget https://github.com/allure-framework/allure2/releases/download/2.35.1/allure-commandline-2.35.1.zip
           unzip allure-commandline-2.35.1.zip -d ./allure-cli
           chmod +x ./allure-cli/bin/allure
           echo "::add-path::${PWD}/allure-cli/bin"
 
-      # 7️⃣ Run Selenium tests with Allure results
+      # 6️⃣ Run Selenium tests with Allure results
       - name: Run Pytest with Allure
         run: |
           pytest --alluredir=allure-results
 
-      # 8️⃣ Generate Allure HTML report
+      # 7️⃣ Generate Allure HTML report
       - name: Generate Allure HTML Report
         run: |
           ./allure-cli/bin/allure generate allure-results -o allure-report --clean
 
-      # 9️⃣ Upload Allure raw results
+      # 8️⃣ Upload Allure raw results
       - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 🔟 Upload Allure HTML report
+      # 9️⃣ Upload Allure HTML report
       - name: Upload Allure HTML report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      # 1️⃣1️⃣ Upload logs and screenshots (optional)
+      # 🔟 Upload logs and screenshots (optional)
       - name: Upload logs and screenshots
         if: always()
         uses: actions/upload-artifact@v4
