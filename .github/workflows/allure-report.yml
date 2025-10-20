@@ -1,10 +1,13 @@
-name: Run Edge Tests and Generate Allure Report
+name: Run Edge Tests and Publish Allure Report
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: write  # required to deploy to GitHub Pages
 
 jobs:
   test:
@@ -38,38 +41,33 @@ jobs:
       # 5️⃣ Run Selenium tests (Edge only)
       - name: Run Pytest with Allure
         run: |
-          pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
+          pytest --browser edge --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
-      # 6️⃣ Install Allure CLI (Windows)
-      - name: Install Allure CLI on Windows
+      # 6️⃣ Install Allure CLI manually (Java version)
+      - name: Install Allure CLI
         run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          irm get.scoop.sh | iex
-          scoop install allure
+          curl -o allure.zip -L https://github.com/allure-framework/allure2/releases/latest/download/allure-2.29.0.zip
+          mkdir allure
+          tar -xf allure.zip -C allure --strip-components=1
+          echo "ALLURE_HOME=${{ github.workspace }}\allure" >> $env:GITHUB_ENV
+          echo "${{ github.workspace }}\allure\bin" >> $env:PATH
 
-      # 7️⃣ Generate Allure HTML Report
+      # 7️⃣ Generate Allure HTML report
       - name: Generate Allure Report
         run: |
-          & "C:\Users\runneradmin\scoop\shims\allure.exe" generate allure-results -o allure-report --clean
+          allure\bin\allure.bat generate allure-results -o allure-report --clean
 
-      # 8️⃣ Upload Allure raw results
-      - name: Upload Allure Results
+      # 8️⃣ Upload Allure results as artifact
+      - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 9️⃣ Upload Allure HTML Report
-      - name: Upload Allure HTML Report
-        uses: actions/upload-artifact@v4
+      # 9️⃣ Deploy Allure report to GitHub Pages
+      - name: Deploy Allure Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: allure-report
-          path: allure-report
-
-      # 🔟 Upload Logs (optional)
-      - name: Upload Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: logs
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-report
+          publish_branch: gh-pages
