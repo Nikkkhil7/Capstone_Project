@@ -138,6 +138,21 @@ jobs:
           Write-Host "Allure report generated. Listing files:"
           Get-ChildItem -Recurse allure-report | Select-Object FullName,Length | Format-Table -AutoSize
 
+      - name: Fix Allure index base href (make resources load correctly)
+        shell: pwsh
+        run: |
+          $index = Join-Path $PWD 'allure-report\index.html'
+          if (-not (Test-Path $index)) {
+            Write-Warning "Allure index.html not found at $index — skipping base fix"
+            exit 0
+          }
+          Write-Host "Patching allure-report/index.html to include <base href='./'>"
+          $content = Get-Content -Raw -Path $index
+          $new = $content -replace '(?i)(<head\b[^>]*>)', '$1`n    <base href="./">'
+          Set-Content -Path $index -Value $new -Encoding UTF8
+          Write-Host "Patched index.html (showing first 40 lines):"
+          Get-Content -Path $index -Head 40 | ForEach-Object { Write-Host $_ }
+
       - name: Prepare site folder (include both reports)
         shell: pwsh
         run: |
