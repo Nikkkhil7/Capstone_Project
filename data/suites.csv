@@ -1,6 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","249","test_sort_products","testCases","2025-10-20","passed","2025-10-20","Test_002_InventoryAndCart","test_002_inventory_and_cart","",""
-"","993","test_login_positive","testCases","2025-10-20","passed","2025-10-20","Test_001_Login","test_001_login","",""
-"","181","test_add_item_to_cart","testCases","2025-10-20","passed","2025-10-20","Test_002_InventoryAndCart","test_002_inventory_and_cart","",""
-"","12710","test_end_to_end_checkout","testCases","2025-10-20","passed","2025-10-20","Test_003_Checkout","test_003_checkout_flow","",""
-"","3810","test_page_title","testCases","2025-10-20","passed","2025-10-20","Test_001_Login","test_001_login","",""
