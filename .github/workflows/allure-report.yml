@@ -33,15 +33,11 @@ jobs:
         run: |
           mkdir -p logs reports screenshots allure-results allure-report
 
-      # 5️⃣ Download and setup Allure CLI
-      - name: Download and setup Allure CLI
+      # 5️⃣ Install Allure CLI
+      - name: Install Allure CLI
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip wget
-          wget https://github.com/allure-framework/allure2/releases/download/2.35.1/allure-commandline-2.35.1.zip
-          unzip allure-commandline-2.35.1.zip -d ./allure-cli
-          chmod +x ./allure-cli/bin/allure
-          echo "::add-path::${PWD}/allure-cli/bin"
+          sudo apt-get install -y allure
 
       # 6️⃣ Run Selenium tests with Allure results
       - name: Run Pytest with Allure
@@ -51,7 +47,7 @@ jobs:
       # 7️⃣ Generate Allure HTML report
       - name: Generate Allure HTML Report
         run: |
-          ./allure-cli/bin/allure generate allure-results -o allure-report --clean
+          allure generate allure-results -o allure-report --clean
 
       # 8️⃣ Upload Allure raw results
       - name: Upload Allure results
