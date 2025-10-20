@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -28,28 +28,46 @@ jobs:
           pip install -r requirements.txt
           pip install allure-pytest
 
-      # 4️⃣ Run tests and generate Allure results
+      # 4️⃣ Create required folders (fixes FileNotFoundError for logs)
+      - name: Create required directories
+        run: |
+          mkdir -p logs
+          mkdir -p reports
+          mkdir -p screenshots
+
+      # 5️⃣ Run Selenium tests with Allure result output
       - name: Run Pytest with Allure
         run: |
           pytest --alluredir=allure-results
 
-      # 5️⃣ Upload Allure results
+      # 6️⃣ Upload Allure raw results (for history/debug)
       - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 6️⃣ Generate Allure HTML report
-      - name: Generate Allure HTML
+      # 7️⃣ Generate Allure HTML report
+      - name: Generate Allure HTML Report
         run: |
           wget https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
           unzip allure-commandline.zip -d ./allure-cli
           ./allure-cli/bin/allure generate allure-results -o allure-report --clean
 
-      # 7️⃣ Upload HTML report as artifact
+      # 8️⃣ Upload Allure HTML report as downloadable artifact
       - name: Upload Allure HTML report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
+
+      # 9️⃣ (Optional) Upload screenshots/reports/logs for debugging
+      - name: Upload logs and screenshots
+        if: always()  # run even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-artifacts
+          path: |
+            logs
+            reports
+            screenshots
