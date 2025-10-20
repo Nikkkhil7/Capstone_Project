@@ -7,62 +7,106 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write  # required to deploy to GitHub Pages
+  contents: write
 
 jobs:
   test:
     runs-on: windows-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-pytest
 
-      # 4️⃣ Create required directories
       - name: Create directories
         run: |
           mkdir logs
           mkdir allure-results
           mkdir allure-report
 
-      # 5️⃣ Run Selenium tests (Edge only)
       - name: Run Pytest with Allure
         run: pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
-      # 6️⃣ Install Allure CLI manually (Java version)
-      - name: Install Allure CLI
+      - name: Install Allure CLI (Windows)
+        shell: pwsh
         run: |
-          curl -o allure.zip -L https://github.com/allure-framework/allure2/releases/latest/download/allure-2.29.0.zip
-          mkdir allure
-          tar -xf allure.zip -C allure --strip-components=1
-          echo "ALLURE_HOME=${{ github.workspace }}\allure" >> $env:GITHUB_ENV
-          echo "${{ github.workspace }}\allure\bin" >> $env:PATH
+          $zip = Join-Path $env:TEMP 'allure.zip'
+          $dest = Join-Path ${{ github.workspace }} 'allure'
 
-      # 7️⃣ Generate Allure HTML report
+          Write-Host "Downloading Allure..."
+          Invoke-WebRequest -Uri "https://github.com/allure-framework/allure2/releases/latest/download/allure-2.29.0.zip" -OutFile $zip -UseBasicParsing
+
+          if (-not (Test-Path $zip)) {
+            Write-Error "Allure zip not found at $zip"
+            exit 1
+          }
+
+          $size = (Get-Item $zip).Length
+          Write-Host "Downloaded file size: $size bytes"
+          if ($size -lt 1000) {
+            Write-Error "Downloaded Allure archive looks too small. Aborting."
+            exit 1
+          }
+
+          if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+          New-Item -ItemType Directory -Path $dest | Out-Null
+
+          Write-Host "Extracting Allure..."
+          Expand-Archive -LiteralPath $zip -DestinationPath $dest -Force
+
+          # The archive typically creates a single folder inside the destination; find its 'bin'
+          $firstFolder = Get-ChildItem -Directory $dest | Select-Object -First 1
+          if ($null -eq $firstFolder) {
+            Write-Error "Could not find extracted Allure folder under $dest"
+            exit 1
+          }
+          $bin = Join-Path $firstFolder.FullName 'bin'
+
+          if (-not (Test-Path $bin)) {
+            Write-Error "Could not find Allure bin directory at $bin"
+            exit 1
+          }
+
+          Write-Host "Allure bin path: $bin"
+
+          # Make allure available to remaining steps in this job (process-level)
+          $env:PATH = "$bin;$env:PATH"
+          Write-Host "Updated process PATH for remaining steps."
+
+          # Persist PATH (and ALLURE_HOME) for subsequent steps by writing to $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "ALLURE_HOME=$($firstFolder.FullName)"
+          # Prepend new bin to PATH for future steps
+          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$bin;$env:PATH"
+
+      - name: Verify Allure
+        shell: pwsh
+        run: |
+          Write-Host "PATH = $env:PATH"
+          # Try to run the allure CLI to confirm it's available
+          & "$env:ALLURE_HOME\bin\allure.bat" --version
+
       - name: Generate Allure Report
-        run: allure\bin\allure.bat generate allure-results -o allure-report --clean
+        shell: pwsh
+        run: |
+          # generate HTML report from results
+          & "$env:ALLURE_HOME\bin\allure.bat" generate allure-results -o allure-report --clean
 
-      # 8️⃣ Upload Allure results as artifact
       - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 9️⃣ Deploy Allure report to GitHub Pages
       - name: Deploy Allure Report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
