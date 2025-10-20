@@ -40,8 +40,7 @@ jobs:
 
       # 5️⃣ Run Selenium tests (Edge only)
       - name: Run Pytest with Allure
-        run: |
-          run: pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
+        run: pytest --alluredir=allure-results --maxfail=1 --disable-warnings -v
 
       # 6️⃣ Install Allure CLI manually (Java version)
       - name: Install Allure CLI
@@ -54,8 +53,7 @@ jobs:
 
       # 7️⃣ Generate Allure HTML report
       - name: Generate Allure Report
-        run: |
-          allure\bin\allure.bat generate allure-results -o allure-report --clean
+        run: allure\bin\allure.bat generate allure-results -o allure-report --clean
 
       # 8️⃣ Upload Allure results as artifact
       - name: Upload Allure results
