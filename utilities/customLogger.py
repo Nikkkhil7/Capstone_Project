@@ -1,17 +1,13 @@
+# utilities/customLogger.py
 import logging
-import os
 
 class LogGen:
     @staticmethod
     def loggen():
-        log_path = "./logs"
-        os.makedirs(log_path, exist_ok=True)  # ✅ Create folder if missing
-
-        logging.basicConfig(
-            filename=os.path.join(log_path, "automation.log"),
-            format='%(asctime)s: %(levelname)s: %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-            level=logging.INFO
-        )
+        logging.basicConfig(filename="./logs/automation.log",
+                            format='%(asctime)s: %(levelname)s: %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            force=True)
         logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
         return logger

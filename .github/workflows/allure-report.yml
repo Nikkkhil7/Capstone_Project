@@ -28,42 +28,52 @@ jobs:
           pip install -r requirements.txt
           pip install allure-pytest
 
-      # 4️⃣ Create required folders (fixes FileNotFoundError for logs)
+      # 4️⃣ Create required directories
       - name: Create required directories
         run: |
-          mkdir -p logs
-          mkdir -p reports
-          mkdir -p screenshots
+          mkdir -p logs reports screenshots allure-results allure-report
 
-      # 5️⃣ Run Selenium tests with Allure result output
+      # 5️⃣ Install utilities (wget, unzip)
+      - name: Install utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+
+      # 6️⃣ Download and setup Allure CLI
+      - name: Setup Allure CLI
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
+          unzip allure-commandline.zip -d ./allure-cli
+          chmod +x ./allure-cli/bin/allure
+          echo "::add-path::${PWD}/allure-cli/bin"
+
+      # 7️⃣ Run Selenium tests with Allure results
       - name: Run Pytest with Allure
         run: |
           pytest --alluredir=allure-results
 
-      # 6️⃣ Upload Allure raw results (for history/debug)
+      # 8️⃣ Generate Allure HTML report
+      - name: Generate Allure HTML Report
+        run: |
+          ./allure-cli/bin/allure generate allure-results -o allure-report --clean
+
+      # 9️⃣ Upload Allure raw results
       - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 7️⃣ Generate Allure HTML report
-      - name: Generate Allure HTML Report
-        run: |
-          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
-          unzip allure-commandline.zip -d ./allure-cli
-          ./allure-cli/bin/allure generate allure-results -o allure-report --clean
-
-      # 8️⃣ Upload Allure HTML report as downloadable artifact
+      # 🔟 Upload Allure HTML report
       - name: Upload Allure HTML report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      # 9️⃣ (Optional) Upload screenshots/reports/logs for debugging
+      # 1️⃣1️⃣ Upload logs and screenshots (optional)
       - name: Upload logs and screenshots
-        if: always()  # run even if tests fail
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-artifacts
