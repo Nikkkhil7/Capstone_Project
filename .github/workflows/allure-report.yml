@@ -27,43 +27,51 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-pytest
+          pip install webdriver-manager selenium pytest
 
       # 4️⃣ Create required directories
       - name: Create required directories
         run: |
           mkdir -p logs reports screenshots allure-results allure-report
 
-      # 5️⃣ Install Allure CLI
-      - name: Install Allure CLI
+      # 5️⃣ Install Firefox and Geckodriver for Selenium
+      - name: Install Firefox and Geckodriver
         run: |
           sudo apt-get update
+          sudo apt-get install -y firefox
+          GECKO_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+          wget -qO- "https://github.com/mozilla/geckodriver/releases/download/$GECKO_VERSION/geckodriver-$GECKO_VERSION-linux64.tar.gz" | sudo tar -xz -C /usr/local/bin
+
+      # 6️⃣ Install Allure CLI
+      - name: Install Allure CLI
+        run: |
           sudo apt-get install -y allure
 
-      # 6️⃣ Run Selenium tests with Allure results
+      # 7️⃣ Run Selenium tests (Firefox headless) and generate Allure results
       - name: Run Pytest with Allure
         run: |
-          pytest --alluredir=allure-results
+          pytest --browser=firefox --alluredir=allure-results --maxfail=1 --disable-warnings -q
 
-      # 7️⃣ Generate Allure HTML report
+      # 8️⃣ Generate Allure HTML report
       - name: Generate Allure HTML Report
         run: |
           allure generate allure-results -o allure-report --clean
 
-      # 8️⃣ Upload Allure raw results
+      # 9️⃣ Upload Allure raw results
       - name: Upload Allure results
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      # 9️⃣ Upload Allure HTML report
+      # 🔟 Upload Allure HTML report
       - name: Upload Allure HTML report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      # 🔟 Upload logs and screenshots (optional)
+      # 1️⃣1️⃣ Upload logs and screenshots (optional)
       - name: Upload logs and screenshots
         if: always()
         uses: actions/upload-artifact@v4
